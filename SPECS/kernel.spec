@@ -99,7 +99,7 @@
 %endif
 
 # Set pkg_release.
-%define pkg_release 32%{?buildid}%{?dist}
+%define pkg_release 33%{?buildid}%{?dist}
 
 #
 # Three sets of minimum package version requirements in the form of Conflicts.
@@ -183,6 +183,7 @@ BuildRequires: python-devel perl(ExtUtils::Embed) gtk2-devel bison
 BuildRequires: elfutils-devel systemtap-sdt-devel audit-libs-devel
 %endif
 BuildRequires: python openssl-devel
+BuildRequires: devtoolset-7-gcc-c++ devtoolset-7-binutils
 
 BuildConflicts: rhbuildsys(DiskFree) < 7Gb
 
@@ -356,6 +357,8 @@ pushd linux-%{version}-%{release}.%{_target_cpu} > /dev/null
 popd > /dev/null
 
 %build
+
+. /opt/rh/devtoolset-7/enable
 
 %if %{with_debuginfo}
 # This override tweaks the kernel makefiles so that we run debugedit on an
@@ -616,6 +619,9 @@ popd > /dev/null
 %endif
 
 %install
+
+. /opt/rh/devtoolset-7/enable
+
 pushd linux-%{version}-%{release}.%{_target_cpu} > /dev/null
 
 %if %{with_doc}
@@ -889,9 +895,10 @@ fi
 %endif
 
 %changelog
-* Tue Oct 30 2018 Karl Johnson <karljohnson.it@gmail.com> 4.9.135-32
+* Tue Oct 30 2018 Karl Johnson <karljohnson.it@gmail.com> 4.9.135-33
 - Upgraded to 4.9.135
 - Remove Patch10002 xsa270.patch, rolled in upstream since 4.9.133
+- Build with GCC 7 from devtoolset-7
 
 * Mon Sep 17 2018 Anthony PERARD <anthony.perard@citrix.com> 4.9.127-32
 - Upgraded to 4.9.127
