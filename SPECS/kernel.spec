@@ -8,7 +8,7 @@
 %endif
  
 # Define the version of the Linux Kernel Archive tarball.
-%define LKAver 4.9.161
+%define LKAver 4.9.165
 
 # Define the buildid, if required.
 #define buildid .1
@@ -99,7 +99,7 @@
 %endif
 
 # Set pkg_release.
-%define pkg_release 34%{?buildid}%{?dist}
+%define pkg_release 35%{?buildid}%{?dist}
 
 #
 # Three sets of minimum package version requirements in the form of Conflicts.
@@ -355,8 +355,6 @@ pushd linux-%{version}-%{release}.%{_target_cpu} > /dev/null
 popd > /dev/null
 
 %build
-
-. /opt/rh/devtoolset-7/enable
 
 %if %{with_debuginfo}
 # This override tweaks the kernel makefiles so that we run debugedit on an
@@ -617,8 +615,6 @@ popd > /dev/null
 %endif
 
 %install
-
-. /opt/rh/devtoolset-7/enable
 
 pushd linux-%{version}-%{release}.%{_target_cpu} > /dev/null
 
@@ -893,6 +889,11 @@ fi
 %endif
 
 %changelog
+* Sat Mar 23 2019 Karl Johnson <karljohnson.it@gmail.com> 4.9.165-35
+- Upgraded to 4.9.165
+- Revert GCC 7 to base GCC for now as it is not possible to use devtoolset on CBS
+- Revert CONFIG_BRIDGE and CONFIG_BRIDGE_NETFILTER to module
+
 * Wed Feb 27 2019 Karl Johnson <karljohnson.it@gmail.com> 4.9.161-34
 - Upgraded to 4.9.161
 
