@@ -183,7 +183,6 @@ BuildRequires: python-devel perl(ExtUtils::Embed) gtk2-devel bison
 BuildRequires: elfutils-devel systemtap-sdt-devel audit-libs-devel
 %endif
 BuildRequires: python openssl-devel
-BuildRequires: devtoolset-7-gcc-c++ devtoolset-7-binutils
 
 BuildConflicts: rhbuildsys(DiskFree) < 7Gb
 
