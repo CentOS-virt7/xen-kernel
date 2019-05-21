@@ -1,0 +1,31 @@
+Fix build of Linux on CentOS 6, with an old GCC.
+
+--- linux-4.9.177.orig/drivers/hid/i2c-hid/i2c-hid-dmi-quirks.c	2019-05-21 10:22:30.414699141 +0100
++++ linux-4.9.177/drivers/hid/i2c-hid/i2c-hid-dmi-quirks.c	2019-05-21 11:04:45.538099301 +0100
+@@ -18,7 +18,7 @@
+ 	union {
+ 		struct i2c_hid_desc *i2c_hid_desc;
+ 		uint8_t             *i2c_hid_desc_buffer;
+-	};
++	} u;
+ 	uint8_t              *hid_report_desc;
+ 	unsigned int          hid_report_desc_size;
+ 	uint8_t              *i2c_name;
+@@ -36,7 +36,7 @@
+  */
+ 
+ static const struct i2c_hid_desc_override sipodev_desc = {
+-	.i2c_hid_desc_buffer = (uint8_t [])
++	.u.i2c_hid_desc_buffer = (uint8_t [])
+ 	{0x1e, 0x00,                  /* Length of descriptor                 */
+ 	 0x00, 0x01,                  /* Version of descriptor                */
+ 	 0xdb, 0x01,                  /* Length of report descriptor          */
+@@ -355,7 +355,7 @@
+ 	if (strcmp(override->i2c_name, i2c_name))
+ 		return NULL;
+ 
+-	return override->i2c_hid_desc;
++	return override->u.i2c_hid_desc;
+ }
+ 
+ char *i2c_hid_get_dmi_hid_report_desc_override(uint8_t *i2c_name,

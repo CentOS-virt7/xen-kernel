@@ -8,7 +8,7 @@
 %endif
  
 # Define the version of the Linux Kernel Archive tarball.
-%define LKAver 4.9.165
+%define LKAver 4.9.177
 
 # Define the buildid, if required.
 #define buildid .1
@@ -183,6 +183,11 @@ BuildRequires: python-devel perl(ExtUtils::Embed) gtk2-devel bison
 BuildRequires: elfutils-devel systemtap-sdt-devel audit-libs-devel
 %endif
 BuildRequires: python openssl-devel
+%if 0%{?centos_ver} >= 7
+# Enable GCC7 only on CentOS 7 because the Xen SIG Virt repo on CentOS6 doesn't
+# have access to devtoolset-7
+BuildRequires: devtoolset-7-gcc-c++ devtoolset-7-binutils
+%endif
 
 BuildConflicts: rhbuildsys(DiskFree) < 7Gb
 
@@ -196,6 +201,8 @@ Source3: config-x86_64
 
 Patch10000: blktap2.patch
 Patch10001: export-for-xenfb2.patch
+# Fix build issue with old GCC
+Patch10002: i2c.patch
 
 %description
 This package provides the Linux kernel (vmlinuz), the core of any
@@ -350,10 +357,15 @@ pushd linux-%{version}-%{release}.%{_target_cpu} > /dev/null
 #roll in patches
 %patch10000 -p1
 %patch10001 -p1
+%patch10002 -p1
 
 popd > /dev/null
 
 %build
+
+%if 0%{?centos_ver} >= 7
+. /opt/rh/devtoolset-7/enable
+%endif
 
 %if %{with_debuginfo}
 # This override tweaks the kernel makefiles so that we run debugedit on an
@@ -614,6 +626,10 @@ popd > /dev/null
 %endif
 
 %install
+
+%if 0%{?centos_ver} >= 7
+. /opt/rh/devtoolset-7/enable
+%endif
 
 pushd linux-%{version}-%{release}.%{_target_cpu} > /dev/null
 
@@ -888,6 +904,10 @@ fi
 %endif
 
 %changelog
+* Mon May 20 2019 Anthony PERARD <anthony.perard@citrix.com> - 4.9.177-35
+- Upgraded to 4.9.177
+- Reenable build with GCC 7, only on CentOS 7
+
 * Sat Mar 23 2019 Karl Johnson <karljohnson.it@gmail.com> 4.9.165-35
 - Upgraded to 4.9.165
 - Revert GCC 7 to base GCC for now as it is not possible to use devtoolset on CBS
