@@ -8,7 +8,7 @@
 %endif
  
 # Define the version of the Linux Kernel Archive tarball.
-%define LKAver 4.9.199
+%define LKAver 4.9.206
 
 # Define the buildid, if required.
 #define buildid .1
@@ -99,7 +99,7 @@
 %endif
 
 # Set pkg_release.
-%define pkg_release 35%{?buildid}%{?dist}
+%define pkg_release 36%{?buildid}%{?dist}
 
 #
 # Three sets of minimum package version requirements in the form of Conflicts.
@@ -904,6 +904,10 @@ fi
 %endif
 
 %changelog
+* Fri Dec 6 2019 Karl Johnson <karljohnson.it@gmail.com> - 4.9.206-36
+- Upgraded to 4.9.206
+- Set CONFIG_X86_INTEL_TSX_MODE_AUTO to Y
+
 * Wed Nov 6 2019 Karl Johnson <karljohnson.it@gmail.com> - 4.9.199-35
 - Upgraded to 4.9.199
 
