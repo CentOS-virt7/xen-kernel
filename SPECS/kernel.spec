@@ -8,7 +8,7 @@
 %endif
  
 # Define the version of the Linux Kernel Archive tarball.
-%define LKAver 4.9.206
+%define LKAver 4.9.212
 
 # Define the buildid, if required.
 #define buildid .1
@@ -904,6 +904,9 @@ fi
 %endif
 
 %changelog
+* Wed Jan 29 2020 Karl Johnson <karljohnson.it@gmail.com> - 4.9.212-36
+- Upgraded to 4.9.212
+
 * Fri Dec 6 2019 Karl Johnson <karljohnson.it@gmail.com> - 4.9.206-36
 - Upgraded to 4.9.206
 - Set CONFIG_X86_INTEL_TSX_MODE_AUTO to Y
