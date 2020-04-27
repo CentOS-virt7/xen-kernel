@@ -8,7 +8,7 @@
 %endif
  
 # Define the version of the Linux Kernel Archive tarball.
-%define LKAver 4.9.215
+%define LKAver 4.9.220
 
 # Define the buildid, if required.
 #define buildid .1
@@ -99,7 +99,7 @@
 %endif
 
 # Set pkg_release.
-%define pkg_release 36%{?buildid}%{?dist}
+%define pkg_release 37%{?buildid}%{?dist}
 
 #
 # Three sets of minimum package version requirements in the form of Conflicts.
@@ -132,6 +132,12 @@
 %else
 %define initrd_prereq mkinitrd >= 6.0.61-1
 %endif
+
+#
+# GCC version
+#
+
+%define use_devtoolset (0%{?rhel} && 0%{?rhel} == 6) || (0%{?rhel} && 0%{?rhel} == 7)
 
 Name: kernel
 Summary: The Linux kernel. (The core of any Linux-based operating system.)
@@ -183,10 +189,9 @@ BuildRequires: python-devel perl(ExtUtils::Embed) gtk2-devel bison
 BuildRequires: elfutils-devel systemtap-sdt-devel audit-libs-devel
 %endif
 BuildRequires: python openssl-devel
-%if 0%{?centos_ver} >= 7
-# Enable GCC7 only on CentOS 7 because the Xen SIG Virt repo on CentOS6 doesn't
-# have access to devtoolset-7
-BuildRequires: devtoolset-7-gcc-c++ devtoolset-7-binutils
+
+%if %{use_devtoolset}
+BuildRequires: devtoolset-8-gcc-c++ devtoolset-8-binutils
 %endif
 
 BuildConflicts: rhbuildsys(DiskFree) < 7Gb
@@ -363,8 +368,8 @@ popd > /dev/null
 
 %build
 
-%if 0%{?centos_ver} >= 7
-. /opt/rh/devtoolset-7/enable
+%if %{use_devtoolset}
+. /opt/rh/devtoolset-8/enable
 %endif
 
 %if %{with_debuginfo}
@@ -627,8 +632,8 @@ popd > /dev/null
 
 %install
 
-%if 0%{?centos_ver} >= 7
-. /opt/rh/devtoolset-7/enable
+%if %{use_devtoolset}
+. /opt/rh/devtoolset-8/enable
 %endif
 
 pushd linux-%{version}-%{release}.%{_target_cpu} > /dev/null
@@ -904,6 +909,10 @@ fi
 %endif
 
 %changelog
+* Fri Apr 24 2020 Karl Johnson <karljohnson.it@gmail.com> - 4.9.220-37
+- Upgraded to 4.9.220
+- Bump GCC from 7 to 8 for both CentOS 6 and 7
+
 * Fri Feb 28 2020 Karl Johnson <karljohnson.it@gmail.com> - 4.9.215-36
 - Upgraded to 4.9.215
 
