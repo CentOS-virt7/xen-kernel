@@ -137,7 +137,12 @@
 # GCC version
 #
 
+# devtoolset-8 is only available on x86_64, it isn't available on CentOS 6 i386
+%ifarch x86_64
 %define use_devtoolset (0%{?rhel} && 0%{?rhel} == 6) || (0%{?rhel} && 0%{?rhel} == 7)
+%else
+%define use_devtoolset 0
+%endif
 
 Name: kernel
 Summary: The Linux kernel. (The core of any Linux-based operating system.)
