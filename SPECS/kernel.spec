@@ -8,7 +8,7 @@
 %endif
  
 # Define the version of the Linux Kernel Archive tarball.
-%define LKAver 4.9.220
+%define LKAver 4.9.221
 
 # Define the buildid, if required.
 #define buildid .1
@@ -914,6 +914,9 @@ fi
 %endif
 
 %changelog
+* Fri May 1 2020 Karl Johnson <karljohnson.it@gmail.com> - 4.9.221-37
+- Upgraded to 4.9.221 (XSA-316)
+
 * Fri Apr 24 2020 Karl Johnson <karljohnson.it@gmail.com> - 4.9.220-37
 - Upgraded to 4.9.220
 - Bump GCC from 7 to 8 for both CentOS 6 and 7
