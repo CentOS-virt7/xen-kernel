@@ -196,8 +196,11 @@ BuildRequires: elfutils-devel systemtap-sdt-devel audit-libs-devel
 BuildRequires: python3 openssl-devel
 
 %if %{with_doc}
+# Required for 'make htmldocs'
 BuildRequires: python3-sphinx
 BuildRequires: python3-virtualenv
+# Other recommanded packages
+BuildRequires: texlive-amscls texlive-amsfonts texlive-amsmath texlive-anyfontsize texlive-capt-of texlive-cmap texlive-collection-fontsrecommended texlive-collection-latex texlive-ec texlive-eqparbox texlive-euenc texlive-fancybox texlive-fancyvrb texlive-float texlive-fncychap texlive-framed texlive-luatex85 texlive-mdwtools texlive-multirow texlive-needspace texlive-oberdiek texlive-parskip texlive-polyglossia texlive-psnfss texlive-tabulary texlive-threeparttable texlive-titlesec texlive-tools texlive-ucs texlive-upquote texlive-wrapfig texlive-xecjk
 %endif
 
 %if %{use_devtoolset}
@@ -602,6 +605,7 @@ BuildKernel NONPAE
 # Sometimes non-world-readable files sneak into the kernel source tree.
 %{__chmod} -R a=rX Documentation
 find Documentation -type d | xargs %{__chmod} u+w
+find Documentation -name '*.py' -exec sed -i -r '1s%^#!(/usr/bin/|/usr/bin/env )python$%#!/usr/bin/env python3%' {} \;
 %endif
 
 %if %{with_perf}
@@ -648,7 +652,7 @@ docdir=$RPM_BUILD_ROOT%{_datadir}/doc/%{name}-doc-%{version}
 
 # Copy the documentation over.
 %{__mkdir_p} $docdir
-%{__tar} -f - --exclude=man --exclude='.*' -c Documentation | %{__tar} xf - -C $docdir
+%{__tar} -f - --exclude=man --exclude='.*' --exclude='sphinx' -c Documentation | %{__tar} xf - -C $docdir
 %endif
 
 %if %{with_headers}
