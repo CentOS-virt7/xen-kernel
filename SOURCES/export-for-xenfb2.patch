@@ -44,13 +44,13 @@ Index: linux-4.9.6/arch/x86/xen/p2m.c
  
  static const struct file_operations p2m_dump_fops = {
  	.open		= p2m_dump_open,
-Index: linux-4.9.6/mm/memory.c
+Index: linux-5.4/mm/memory.c
 ===================================================================
---- linux-4.9.6.orig/mm/memory.c
-+++ linux-4.9.6/mm/memory.c
-@@ -1400,6 +1400,7 @@ void zap_page_range(struct vm_area_struc
- 	mmu_notifier_invalidate_range_end(mm, start, end);
- 	tlb_finish_mmu(&tlb, start, end);
+--- linux-5.4.orig/mm/memory.c
++++ linux-5.4/mm/memory.c
+@@ -1340,6 +1340,7 @@ void zap_page_range(struct vm_area_struc
+ 	mmu_notifier_invalidate_range_end(&range);
+ 	tlb_finish_mmu(&tlb, start, range.end);
  }
 +EXPORT_SYMBOL_GPL(zap_page_range);
  
