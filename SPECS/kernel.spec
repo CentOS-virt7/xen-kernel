@@ -8,7 +8,7 @@
 %endif
  
 # Define the version of the Linux Kernel Archive tarball.
-%define LKAver 4.9.221
+%define LKAver 5.4.43
 
 # Define the buildid, if required.
 #define buildid .1
@@ -99,7 +99,7 @@
 %endif
 
 # Set pkg_release.
-%define pkg_release 37%{?buildid}%{?dist}
+%define pkg_release 1%{?buildid}%{?dist}
 
 #
 # Three sets of minimum package version requirements in the form of Conflicts.
@@ -202,7 +202,7 @@ BuildRequires: devtoolset-8-gcc-c++ devtoolset-8-binutils
 BuildConflicts: rhbuildsys(DiskFree) < 7Gb
 
 # Sources.
-Source0: https://www.kernel.org/pub/linux/kernel/v4.x/linux-%{LKAver}.tar.xz
+Source0: https://www.kernel.org/pub/linux/kernel/v5.x/linux-%{LKAver}.tar.xz
 Source1: config-i686
 Source2: config-i686-NONPAE
 Source3: config-x86_64
@@ -914,6 +914,10 @@ fi
 %endif
 
 %changelog
+* Mon Jun 01 2020 Anthony PERARD <anthony.perard@citrix.com> - 5.4.43-1
+- Upgrade to latest LTS 5.4.
+- First CentOS 8 build
+
 * Fri May 1 2020 Karl Johnson <karljohnson.it@gmail.com> - 4.9.221-37
 - Upgraded to 4.9.221 (XSA-316)
 
