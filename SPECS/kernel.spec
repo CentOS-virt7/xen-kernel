@@ -209,10 +209,7 @@ Source3: config-x86_64
 
 #Patches
 
-Patch10000: blktap2.patch
 Patch10001: export-for-xenfb2.patch
-# Fix build issue with old GCC
-Patch10002: i2c.patch
 
 %description
 This package provides the Linux kernel (vmlinuz), the core of any
@@ -365,9 +362,7 @@ pushd linux-%{version}-%{release}.%{_target_cpu} > /dev/null
 #popd > /dev/null
 
 #roll in patches
-%patch10000 -p1
 %patch10001 -p1
-%patch10002 -p1
 
 popd > /dev/null
 
@@ -917,6 +912,7 @@ fi
 * Mon Jun 01 2020 Anthony PERARD <anthony.perard@citrix.com> - 5.4.43-1
 - Upgrade to latest LTS 5.4.
 - First CentOS 8 build
+- Remove blktap2 support
 
 * Fri May 1 2020 Karl Johnson <karljohnson.it@gmail.com> - 4.9.221-37
 - Upgraded to 4.9.221 (XSA-316)
