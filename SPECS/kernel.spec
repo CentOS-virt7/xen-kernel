@@ -190,10 +190,10 @@ BuildRequires: hostname
 %endif
 %if %{with_perf}
 BuildRequires: elfutils-libelf-devel zlib-devel binutils-devel newt-devel, numactl-devel
-BuildRequires: python-devel perl(ExtUtils::Embed) gtk2-devel bison 
+BuildRequires: python3-devel perl(ExtUtils::Embed) gtk2-devel bison
 BuildRequires: elfutils-devel systemtap-sdt-devel audit-libs-devel
 %endif
-BuildRequires: python openssl-devel
+BuildRequires: python3 openssl-devel
 
 %if %{use_devtoolset}
 BuildRequires: devtoolset-8-gcc-c++ devtoolset-8-binutils
