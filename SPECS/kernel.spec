@@ -195,6 +195,11 @@ BuildRequires: elfutils-devel systemtap-sdt-devel audit-libs-devel
 %endif
 BuildRequires: python3 openssl-devel
 
+%if %{with_doc}
+BuildRequires: python3-sphinx
+BuildRequires: python3-virtualenv
+%endif
+
 %if %{use_devtoolset}
 BuildRequires: devtoolset-8-gcc-c++ devtoolset-8-binutils
 %endif
@@ -592,7 +597,7 @@ BuildKernel NONPAE
 
 %if %{with_doc}
 # Make the HTML and man pages.
-%{__make} -s -j1 htmldocs mandocs 2> /dev/null || false
+%{__make} -s -j1 htmldocs 2> /dev/null || false
 
 # Sometimes non-world-readable files sneak into the kernel source tree.
 %{__chmod} -R a=rX Documentation
@@ -640,17 +645,10 @@ pushd linux-%{version}-%{release}.%{_target_cpu} > /dev/null
 
 %if %{with_doc}
 docdir=$RPM_BUILD_ROOT%{_datadir}/doc/%{name}-doc-%{version}
-man9dir=$RPM_BUILD_ROOT%{_datadir}/man/man9
 
 # Copy the documentation over.
 %{__mkdir_p} $docdir
 %{__tar} -f - --exclude=man --exclude='.*' -c Documentation | %{__tar} xf - -C $docdir
-
-# Install the man pages for the kernel API.
-%{__mkdir_p} $man9dir
-for file in $(find Documentation/DocBook/man -name '*.9.gz' | sort | uniq); do
-%{__cp} -af $file $man9dir/
-done
 %endif
 
 %if %{with_headers}
