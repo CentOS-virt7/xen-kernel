@@ -185,7 +185,8 @@ BuildRequires: bzip2, findutils, gzip, m4, perl, make >= 3.78, diffutils, gawk
 BuildRequires: gcc >= 3.4.2, binutils >= 2.12, redhat-rpm-config
 BuildRequires: net-tools, patchutils, rpm-build >= 4.8.0-7
 BuildRequires: xmlto, asciidoc, bc, xz-devel
-%if "%{rhel}" == "7"
+BuildRequires: rsync
+%if 0%{?rhel} >= 7
 BuildRequires: hostname
 %endif
 %if %{with_perf}
@@ -511,7 +512,7 @@ hwcap 1 nosegneg"
     # Make a hard-link from the include/linux/ directory to the include/generated/autoconf.h file.
     %{__rm} -f $RPM_BUILD_ROOT/lib/modules/%{KVRFA}/build/include/Kbuild
     # Ensure a copy of the version.h file is in the include/linux/ directory.
-    %{__cp} usr/include/linux/version.h $RPM_BUILD_ROOT/lib/modules/%{KVRFA}/build/include/linux/
+    %{__cp} include/generated/uapi/linux/version.h $RPM_BUILD_ROOT/lib/modules/%{KVRFA}/build/include/linux/
     # Copy the generated autoconf.h file to the include/linux/ directory.
     %{__cp} include/generated/autoconf.h $RPM_BUILD_ROOT/lib/modules/%{KVRFA}/build/include/linux/
     # Copy .config to include/config/auto.conf so a "make prepare" is unnecessary.
@@ -879,7 +880,6 @@ fi
 %{_datadir}/doc/%{name}-doc-%{version}/Documentation/*
 %dir %{_datadir}/doc/%{name}-doc-%{version}/Documentation
 %dir %{_datadir}/doc/%{name}-doc-%{version}
-%{_datadir}/man/man9/*
 %endif
 
 %if %{with_headers}
