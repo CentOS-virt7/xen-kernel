@@ -182,20 +182,13 @@ AutoProv: yes
 #
 BuildRequires: module-init-tools, patch >= 2.5.4, bash >= 2.03, sh-utils, tar
 BuildRequires: bzip2, findutils, gzip, m4, perl, make >= 3.78, diffutils, gawk
-BuildRequires: gcc >= 3.4.2, binutils >= 2.12, redhat-rpm-config
+BuildRequires: gcc >= 3.4.2, binutils >= 2.12, redhat-rpm-config, python3-devel
 BuildRequires: net-tools, patchutils, rpm-build >= 4.8.0-7
 BuildRequires: xmlto, asciidoc, bc, xz-devel
 BuildRequires: rsync
 %if 0%{?rhel} >= 7
 BuildRequires: hostname
 %endif
-%if %{with_perf}
-BuildRequires: elfutils-libelf-devel zlib-devel binutils-devel newt-devel, numactl-devel
-BuildRequires: python3-devel perl(ExtUtils::Embed) gtk2-devel bison
-BuildRequires: elfutils-devel systemtap-sdt-devel audit-libs-devel
-%endif
-BuildRequires: python3 openssl-devel
-
 %if %{with_doc}
 # Required for 'make htmldocs'
 BuildRequires: python3-sphinx
@@ -203,6 +196,15 @@ BuildRequires: python3-virtualenv
 # Other recommanded packages
 BuildRequires: texlive-amscls texlive-amsfonts texlive-amsmath texlive-anyfontsize texlive-capt-of texlive-cmap texlive-collection-fontsrecommended texlive-collection-latex texlive-ec texlive-eqparbox texlive-euenc texlive-fancybox texlive-fancyvrb texlive-float texlive-fncychap texlive-framed texlive-luatex85 texlive-mdwtools texlive-multirow texlive-needspace texlive-oberdiek texlive-parskip texlive-polyglossia texlive-psnfss texlive-tabulary texlive-threeparttable texlive-titlesec texlive-tools texlive-ucs texlive-upquote texlive-wrapfig texlive-xecjk
 %endif
+%if %{with_perf}
+BuildRequires: elfutils-libelf-devel zlib-devel binutils-devel newt-devel, numactl-devel
+BuildRequires: perl(ExtUtils::Embed) gtk2-devel bison
+BuildRequires: elfutils-devel systemtap-sdt-devel audit-libs-devel
+%endif
+%if %{with_debuginfo}
+%undefine _debugsource_packages
+%endif
+BuildRequires: openssl-devel
 
 %if %{use_devtoolset}
 BuildRequires: devtoolset-8-gcc-c++ devtoolset-8-binutils
@@ -340,9 +342,6 @@ Group: Development/Debug
 This package provides debug information for kernel-%{version}-%{release}.
 %endif
 
-# Disable the building of the debug package(s).
-%define debug_package %{nil}
-
 %prep
 %setup -q -n %{name}-%{version} -c
 %{__mv} linux-%{LKAver} linux-%{version}-%{release}.%{_target_cpu}
@@ -372,6 +371,9 @@ pushd linux-%{version}-%{release}.%{_target_cpu} > /dev/null
 
 #roll in patches
 %patch10001 -p1
+
+# Mangle unversionned python scripts shebangs
+find scripts -type f -exec sed -i -r '1s%^#!(/usr/bin/|/usr/bin/env )python$%#!/usr/bin/python2%' {} \;
 
 popd > /dev/null
 
@@ -618,6 +620,13 @@ find Documentation -name '*.py' -exec sed -i -r '1s%^#!(/usr/bin/|/usr/bin/env )
 %endif
 
 popd > /dev/null
+
+###
+### Special hacks for debuginfo subpackages.
+###
+
+# This macro is used by %%install, so we must redefine it before that.
+%define debug_package %{nil}
 
 %if %{with_debuginfo}
 
