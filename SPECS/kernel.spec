@@ -937,7 +937,6 @@ fi
 %defattr(-,root,root)
 /etc/bash_completion.d/perf
 %{_bindir}/perf
-%{_libdir}/libperf-jvmti.so
 %dir %{_libdir}/traceevent/plugins
 %{_libdir}/traceevent/plugins/*
 %dir %{_libexecdir}/perf-core
