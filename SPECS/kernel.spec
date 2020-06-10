@@ -211,7 +211,17 @@ BuildRequires: perl(ExtUtils::Embed) gtk2-devel bison
 BuildRequires: elfutils-devel systemtap-sdt-devel audit-libs-devel
 %endif
 %if %{with_debuginfo}
+# Most of these should be enabled after more investigation
+%undefine _include_minidebuginfo
+%undefine _find_debuginfo_dwz_opts
+%undefine _unique_build_ids
+%undefine _unique_debug_names
+%undefine _unique_debug_srcs
 %undefine _debugsource_packages
+%undefine _debuginfo_subpackages
+%global _find_debuginfo_opts -r
+%global _missing_build_ids_terminate_build 1
+%global _no_recompute_build_ids 1
 %endif
 BuildRequires: openssl-devel
 
@@ -622,7 +632,7 @@ find Documentation -name '*.py' -exec sed -i -r '1s%^#!(/usr/bin/|/usr/bin/env )
 
 %if %{with_perf}
 %global perf_make \
-  %{__make} -s %{?_smp_mflags} -C tools/perf V=1 HAVE_CPLUS_DEMANGLE=1 NO_DWARF=1 WERROR=0 prefix=%{_prefix}
+  %{__make} -s %{?_smp_mflags} -C tools/perf V=1 NO_PERF_READ_VDSO32=1 NO_PERF_READ_VDSOX32=1 NO_LIBUNWIND=1 HAVE_CPLUS_DEMANGLE=1 NO_DWARF=1 WERROR=0 NO_GTK2=1 NO_STRLCPY=1 NO_BIONIC=1 LIBBPF_DYNAMIC=1 prefix=%{_prefix}
 
 %{perf_make} all
 %{perf_make} man || false
@@ -645,9 +655,11 @@ popd > /dev/null
   %{__cp} %{_builddir}/%{?buildsubdir}/linux-%{version}-%{release}.%{_target_cpu}/tools/perf/perf $RPM_BUILD_ROOT/usr/bin/\
 %{nil}
 %else
+%if 0%{?rhel} == 7
 %define __debug_install_post \
   /usr/lib/rpm/find-debuginfo.sh --strict-build-id %{_builddir}/%{?buildsubdir}\
 %{nil}
+%endif
 %endif
 
 %ifnarch noarch
@@ -705,12 +717,19 @@ find $RPM_BUILD_ROOT/usr/include \
 
 %if %{with_perf}
 # perf tool binary and supporting scripts/binaries.
-%{perf_make} DESTDIR=$RPM_BUILD_ROOT install
+%{perf_make} DESTDIR=$RPM_BUILD_ROOT lib=%{_lib} install-bin install-traceevent-plugins
 # remove the 'trace' symlink.
 rm -f $RPM_BUILD_ROOT/%{_bindir}/trace
 
+# remove examples
+rm -rf %{buildroot}/usr/lib/examples/perf
+
+# remove perf-bpf examples
+rm -rf %{buildroot}/usr/lib/perf/examples
+rm -rf %{buildroot}/usr/lib/perf/include
+
 # perf man pages. (Note: implicit rpm magic compresses them later.)
-%{perf_make} DESTDIR=$RPM_BUILD_ROOT install-man || false
+%{perf_make} DESTDIR=$RPM_BUILD_ROOT install-man
 %endif
 
 popd > /dev/null
@@ -923,8 +942,9 @@ fi
 %{_libdir}/traceevent/plugins/*
 %dir %{_libexecdir}/perf-core
 %{_libexecdir}/perf-core/*
-%{_mandir}/man[1-8]/*
-/usr/share/doc/perf-tip/tips.txt
+%{_datadir}/perf-core/*
+%{_mandir}/man[1-8]/perf*
+%{_docdir}/perf-tip/tips.txt
 /usr/share/perf-core/strace/groups/file
 %endif
 
