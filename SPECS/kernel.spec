@@ -36,10 +36,23 @@
 # kernel-debuginfo
 %define with_debuginfo %{?_without_debuginfo: 0} %{?!_without_debuginfo: 1}
 
+%define asmarch %_target_cpu
+%define buildarch %_target_cpu
+
 %if !%{with_debuginfo}
 %define _enable_debug_packages 0
 %endif
 %define debuginfodir /usr/lib/debug
+# Needed because we override almost everything involving build-ids
+# and debuginfo generation. Currently we rely on the old alldebug setting.
+%global _build_id_links alldebug
+
+# Overrides for generic default options
+
+# only package docs noarch
+%ifnarch noarch
+%define with_doc 0
+%endif
 
 # Build only the kernel-doc & kernel-firmware packages.
 %ifarch noarch
@@ -52,11 +65,14 @@
 %define with_debuginfo 0
 %endif
 
+# Per-arch tweaks
+
 # Build only the 32-bit kernel-headers package.
 %ifarch i386
+%define asmarch x86
+%define buildarch i386
 %define with_std 0
 %define with_nonpae 0
-%define with_doc 0
 %define with_firmware 0
 %define with_perf 0
 %define with_vdso_install 0
@@ -64,25 +80,18 @@
 
 # Build only the 32-bit kernel packages.
 %ifarch i686
+%define asmarch x86
+%define buildarch i386
 %define with_nonpae 1
-%define with_doc 0
 %define with_firmware 0
 %endif
 
 # Build only the 64-bit kernel-headers & kernel packages.
 %ifarch x86_64
-%define with_nonpae 0
-%define with_doc 0
-%define with_firmware 0
-%endif
-
-# Define the asmarch.
 %define asmarch x86
-
-# Define the correct buildarch.
 %define buildarch x86_64
-%ifarch i386 i686
-%define buildarch i386
+%define with_nonpae 0
+%define with_firmware 0
 %endif
 
 # Define the vdso_arches.
@@ -108,7 +117,7 @@
 #
 # First the general kernel required versions, as per Documentation/Changes.
 #
-%define kernel_dot_org_conflicts  ppp < 2.4.3-3, isdn4k-utils < 3.2-32, nfs-utils < 1.0.7-12, e2fsprogs < 1.37-4, util-linux < 2.12, jfsutils < 1.1.7-2, reiserfs-utils < 3.6.19-2, xfsprogs < 2.6.13-4, procps < 3.2.5-6.3, oprofile < 0.9.1-2
+%define kernel_dot_org_conflicts  ppp < 2.4.3-3, isdn4k-utils < 3.2-32, nfs-utils < 1.0.7-12, e2fsprogs < 1.41.4, util-linux < 2.12, jfsutils < 1.1.7-2, reiserfs-utils < 3.6.19-2, xfsprogs < 2.6.13-4, procps < 3.2.5-6.3, oprofile < 0.9.1-2
 
 #
 # Then a series of requirements that are distribution specific, either because
@@ -160,7 +169,7 @@ Provides: kernel-drm-nouveau = 16
 Provides: kernel-modeset = 1
 Provides: kernel-xen = %{version}-%{release}.%{_target_cpu}
 Provides: kernel-uname-r = %{version}-%{release}.%{_target_cpu}
-%if "%{rhel}" == "7"
+%if "%{rhel}" >= "7"
 Requires: linux-firmware >=  20140911
 %else
 Requires: kernel-firmware >= %{version}-%{release}
@@ -299,7 +308,7 @@ options that can be passed to the kernel modules at load time.
 %package headers
 Summary: Header files for the Linux kernel for use by glibc
 Group: Development/System
-Obsoletes: glibc-kernheaders
+Obsoletes: glibc-kernheaders < 3.0-46
 Provides: glibc-kernheaders = 3.0-46
 Provides: kernel-headers = %{version}-%{release}
 Conflicts: kernel-headers < %{version}-%{release}
