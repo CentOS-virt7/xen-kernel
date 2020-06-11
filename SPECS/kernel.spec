@@ -36,6 +36,7 @@
 # kernel-debuginfo
 %define with_debuginfo %{?_without_debuginfo: 0} %{?!_without_debuginfo: 1}
 
+%define KVERREL %{version}-%{release}.%{_target_cpu}
 %define asmarch %_target_cpu
 %define buildarch %_target_cpu
 
@@ -167,8 +168,8 @@ Provides: kernel-%{_target_cpu} = %{version}-%{release}
 Provides: kernel-drm = 4.3.0
 Provides: kernel-drm-nouveau = 16
 Provides: kernel-modeset = 1
-Provides: kernel-xen = %{version}-%{release}.%{_target_cpu}
-Provides: kernel-uname-r = %{version}-%{release}.%{_target_cpu}
+Provides: kernel-xen = %{KVERREL}
+Provides: kernel-uname-r = %{KVERREL}
 %if "%{rhel}" >= "7"
 Requires: linux-firmware >=  20140911
 %else
@@ -251,7 +252,7 @@ Summary: Development package for building kernel modules to match the kernel.
 Group: System Environment/Kernel
 Provides: kernel-devel-%{_target_cpu} = %{version}-%{release}
 Provides: kernel-devel = %{version}-%{release}
-Provides: kernel-devel-uname-r = %{version}-%{release}.%{_target_cpu}
+Provides: kernel-devel-uname-r = %{KVERREL}
 Requires(pre): /usr/bin/find
 AutoReqProv: no
 %description devel
@@ -269,7 +270,7 @@ Provides: kernel-NONPAE-%{_target_cpu} = %{version}-%{release}NONPAE
 Provides: kernel-drm = 4.3.0
 Provides: kernel-drm-nouveau = 16
 Provides: kernel-modeset = 1
-Provides: kernel-uname-r = %{version}-%{release}.%{_target_cpu}
+Provides: kernel-uname-r = %{KVERREL}
 Requires(pre): %{kernel_prereq}
 Requires(pre): %{initrd_prereq}
 Requires(post): %{ksbindir}/new-kernel-pkg
@@ -292,7 +293,7 @@ Summary: Development package for building kernel modules to match the non-PAE ke
 Group: System Environment/Kernel
 Provides: kernel-NONPAE-devel-%{_target_cpu} = %{version}-%{release}
 Provides: kernel-NONPAE-devel = %{version}-%{release}NONPAE
-Provides: kernel-NONPAE-devel-uname-r = %{version}-%{release}.%{_target_cpu}
+Provides: kernel-NONPAE-devel-uname-r = %{KVERREL}
 Requires(pre): /usr/bin/find
 AutoReqProv: no
 %description NONPAE-devel
@@ -363,8 +364,8 @@ This package provides debug information for kernel-%{version}-%{release}.
 
 %prep
 %setup -q -n %{name}-%{version} -c
-%{__mv} linux-%{LKAver} linux-%{version}-%{release}.%{_target_cpu}
-pushd linux-%{version}-%{release}.%{_target_cpu} > /dev/null
+%{__mv} linux-%{LKAver} linux-%{KVERREL}
+pushd linux-%{KVERREL} > /dev/null
 %{__cp} %{SOURCE1} .
 %{__cp} %{SOURCE2} .
 %{__cp} %{SOURCE3} .
@@ -610,7 +611,7 @@ hwcap 1 nosegneg"
 
 %{__rm} -rf $RPM_BUILD_ROOT
 
-pushd linux-%{version}-%{release}.%{_target_cpu} > /dev/null
+pushd linux-%{KVERREL} > /dev/null
 
 %if %{with_std}
 BuildKernel
@@ -652,7 +653,7 @@ popd > /dev/null
 %if "%{rhel}" == "6"
 %define __debug_install_post \
   /usr/lib/rpm/find-debuginfo.sh --strict-build-id %{_builddir}/%{?buildsubdir}\
-  %{__cp} %{_builddir}/%{?buildsubdir}/linux-%{version}-%{release}.%{_target_cpu}/tools/perf/perf $RPM_BUILD_ROOT/usr/bin/\
+  %{__cp} %{_builddir}/%{?buildsubdir}/linux-%{KVERREL}/tools/perf/perf $RPM_BUILD_ROOT/usr/bin/\
 %{nil}
 %else
 %if 0%{?rhel} == 7
@@ -676,7 +677,7 @@ popd > /dev/null
 . /opt/rh/devtoolset-8/enable
 %endif
 
-pushd linux-%{version}-%{release}.%{_target_cpu} > /dev/null
+pushd linux-%{KVERREL} > /dev/null
 
 %if %{with_doc}
 docdir=$RPM_BUILD_ROOT%{_datadir}/doc/%{name}-doc-%{version}
@@ -746,13 +747,13 @@ if [ $? -ne 0 ]; then
         NEWKERNARGS="--kernel-args=\"crashkernel=auto\""
 fi
 %if %{with_dracut}
-%{ksbindir}/new-kernel-pkg --package kernel --mkinitrd --dracut --depmod --update %{version}-%{release}.%{_target_cpu} $NEWKERNARGS || exit $?
+%{ksbindir}/new-kernel-pkg --package kernel --mkinitrd --dracut --depmod --update %{KVERREL} $NEWKERNARGS || exit $?
 %else
-%{ksbindir}/new-kernel-pkg --package kernel --mkinitrd --depmod --update %{version}-%{release}.%{_target_cpu} $NEWKERNARGS || exit $?
+%{ksbindir}/new-kernel-pkg --package kernel --mkinitrd --depmod --update %{KVERREL} $NEWKERNARGS || exit $?
 %endif
-%{ksbindir}/new-kernel-pkg --package kernel --rpmposttrans %{version}-%{release}.%{_target_cpu} || exit $?
+%{ksbindir}/new-kernel-pkg --package kernel --rpmposttrans %{KVERREL} || exit $?
 if [ -x %{ksbindir}/weak-modules ]; then
-    %{ksbindir}/weak-modules --add-kernel %{version}-%{release}.%{_target_cpu} || exit $?
+    %{ksbindir}/weak-modules --add-kernel %{KVERREL} || exit $?
 fi
 if [ -x %{ksbindir}/ldconfig ]
 then
@@ -762,7 +763,7 @@ fi
 #added tp auto-install xen kernel in grub
 %ifarch x86_64
 if [ -e /etc/sysconfig/xen-kernel ] && [ -e /usr/bin/grub-bootxen.sh ] ; then
-    kver="%{version}-%{release}.%{_target_cpu}" /usr/bin/grub-bootxen.sh
+    kver="%{KVERREL}" /usr/bin/grub-bootxen.sh
 fi
 %endif
 
@@ -773,12 +774,12 @@ fi
 if grep --silent '^hwcap 0 nosegneg$' /etc/ld.so.conf.d/kernel-*.conf 2> /dev/null; then
     /bin/sed -i '/^hwcap 0 nosegneg$/ s/0/1/' /etc/ld.so.conf.d/kernel-*.conf
 fi
-%{ksbindir}/new-kernel-pkg --package kernel --install %{version}-%{release}.%{_target_cpu} || exit $?
+%{ksbindir}/new-kernel-pkg --package kernel --install %{KVERREL} || exit $?
 
 %preun
-%{ksbindir}/new-kernel-pkg --rminitrd --rmmoddep --remove %{version}-%{release}.%{_target_cpu} || exit $?
+%{ksbindir}/new-kernel-pkg --rminitrd --rmmoddep --remove %{KVERREL} || exit $?
 if [ -x %{ksbindir}/weak-modules ]; then
-    %{ksbindir}/weak-modules --remove-kernel %{version}-%{release}.%{_target_cpu} || exit $?
+    %{ksbindir}/weak-modules --remove-kernel %{KVERREL} || exit $?
 fi
 if [ -x %{ksbindir}/ldconfig ]
 then
@@ -790,7 +791,7 @@ if [ -f /etc/sysconfig/kernel ]; then
     . /etc/sysconfig/kernel || exit $?
 fi
 if [ "$HARDLINK" != "no" -a -x /usr/sbin/hardlink ]; then
-    pushd /usr/src/kernels/%{version}-%{release}.%{_target_cpu} > /dev/null
+    pushd /usr/src/kernels/%{KVERREL} > /dev/null
     /usr/bin/find . -type f | while read f; do
         hardlink -c /usr/src/kernels/*.fc*.*/$f $f
     done
@@ -852,32 +853,32 @@ fi
 %if %{with_std}
 %files
 %defattr(-,root,root)
-/boot/vmlinuz-%{version}-%{release}.%{_target_cpu}
-/boot/System.map-%{version}-%{release}.%{_target_cpu}
-/boot/symvers-%{version}-%{release}.%{_target_cpu}.gz
-/boot/config-%{version}-%{release}.%{_target_cpu}
-%dir /lib/modules/%{version}-%{release}.%{_target_cpu}
-/lib/modules/%{version}-%{release}.%{_target_cpu}/kernel
-/lib/modules/%{version}-%{release}.%{_target_cpu}/extra
-/lib/modules/%{version}-%{release}.%{_target_cpu}/build
-/lib/modules/%{version}-%{release}.%{_target_cpu}/source
-/lib/modules/%{version}-%{release}.%{_target_cpu}/updates
-/lib/modules/%{version}-%{release}.%{_target_cpu}/weak-updates
+/boot/vmlinuz-%{KVERREL}
+/boot/System.map-%{KVERREL}
+/boot/symvers-%{KVERREL}.gz
+/boot/config-%{KVERREL}
+%dir /lib/modules/%{KVERREL}
+/lib/modules/%{KVERREL}/kernel
+/lib/modules/%{KVERREL}/extra
+/lib/modules/%{KVERREL}/build
+/lib/modules/%{KVERREL}/source
+/lib/modules/%{KVERREL}/updates
+/lib/modules/%{KVERREL}/weak-updates
 %ifarch %{vdso_arches}
-/lib/modules/%{version}-%{release}.%{_target_cpu}/vdso
-/etc/ld.so.conf.d/kernel-%{version}-%{release}.%{_target_cpu}.conf
+/lib/modules/%{KVERREL}/vdso
+/etc/ld.so.conf.d/kernel-%{KVERREL}.conf
 %endif
-/lib/modules/%{version}-%{release}.%{_target_cpu}/modules.*
+/lib/modules/%{KVERREL}/modules.*
 %if %{with_dracut}
-%ghost /boot/initramfs-%{version}-%{release}.%{_target_cpu}.img
+%ghost /boot/initramfs-%{KVERREL}.img
 %else
-%ghost /boot/initrd-%{version}-%{release}.%{_target_cpu}.img
+%ghost /boot/initrd-%{KVERREL}.img
 %endif
 
 %files devel
 %defattr(-,root,root)
 %dir /usr/src/kernels
-/usr/src/kernels/%{version}-%{release}.%{_target_cpu}
+/usr/src/kernels/%{KVERREL}
 %endif
 
 %if %{with_nonpae}
@@ -929,7 +930,7 @@ fi
 %files firmware
 %defattr(-,root,root)
 /lib/firmware/*
-%doc linux-%{version}-%{release}.%{_target_cpu}/firmware/WHENCE
+%doc linux-%{KVERREL}/firmware/WHENCE
 %endif
 
 %if %{with_perf}
