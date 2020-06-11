@@ -111,7 +111,7 @@
 %endif
 
 # Set pkg_release.
-%define pkg_release 1%{?buildid}%{?dist}
+%define pkg_release 2%{?buildid}%{?dist}
 
 #
 # Three sets of minimum package version requirements in the form of Conflicts.
@@ -767,9 +767,6 @@ fi\
 #	%%kernel_modules_post [<subpackage>]
 #
 %define kernel_modules_post() \
-%{expand:%%post %{?1:%{1}}}\
-/sbin/depmod -a %{KVERREL}%{?1:+%{1}}\
-%{nil}\
 %{expand:%%postun %{?1:%{1}}}\
 /sbin/depmod -a %{KVERREL}%{?1:+%{1}}\
 %{nil}
@@ -805,6 +802,7 @@ fi\
 %{expand:%%kernel_modules_post %{?-v*}}\
 %{expand:%%kernel_variant_posttrans %{?-v*}}\
 %{expand:%%post %{?-v*:%{-v*}}}\
+/sbin/depmod -a %{KVERREL}%{?1:+%{1}}\
 if grep --silent '^hwcap 0 nosegneg$' /etc/ld.so.conf.d/kernel-*.conf 2> /dev/null; then\
     /bin/sed -i '/^hwcap 0 nosegneg$/ s/0/1/' /etc/ld.so.conf.d/kernel-*.conf\
 fi\
