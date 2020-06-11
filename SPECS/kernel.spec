@@ -23,6 +23,8 @@
 %define with_nonpae       %{?_without_nonpae:       0} %{?!_without_nonpae:       1}
 # kernel-doc
 %define with_doc          %{?_without_doc:          0} %{?!_without_doc:          1}
+# realtime
+%define with_realtime 0
 # kernel-headers
 %define with_headers      %{?_without_headers:      0} %{?!_without_headers:      1}
 # kernel-firmware
@@ -136,7 +138,7 @@
 #
 # Packages that need to be installed before the kernel because the %post scripts make use of them.
 #
-%define kernel_prereq fileutils, module-init-tools, initscripts >= 8.11.1-1, grubby >= 7.0.4-1
+%define kernel_prereq fileutils, module-init-tools, initscripts >= 8.11.1-1, grubby >= 7.0.4-1, /usr/bin/kernel-install
 %if %{with_dracut}
 %define initrd_prereq dracut-kernel >= 002-18.git413bcf78
 %else
@@ -177,8 +179,6 @@ Requires: kernel-firmware >= %{version}-%{release}
 %endif
 Requires(pre): %{kernel_prereq}
 Requires(pre): %{initrd_prereq}
-Requires(post): %{ksbindir}/new-kernel-pkg
-Requires(preun): %{ksbindir}/new-kernel-pkg
 Conflicts: %{kernel_dot_org_conflicts}
 Conflicts: %{package_conflicts}
 Conflicts: %{kernel_headers_conflicts}
@@ -738,115 +738,111 @@ popd > /dev/null
 %clean
 %{__rm} -rf $RPM_BUILD_ROOT
 
-# Scripts section.
+###
+### scripts
+###
+
+#
+# This macro defines a %%post script for a kernel*-devel package.
+#	%%kernel_devel_post [<subpackage>]
+#
+%define kernel_devel_post() \
+%{expand:%%post %{?1:%{1}-}devel}\
+if [ -f /etc/sysconfig/kernel ]\
+then\
+    . /etc/sysconfig/kernel || exit $?\
+fi\
+if [ "$HARDLINK" != "no" -a -x /usr/sbin/hardlink ]\
+then\
+    (cd /usr/src/kernels/%{KVERREL}%{?1:+%{1}} &&\
+     /usr/bin/find . -type f | while read f; do\
+       hardlink -c /usr/src/kernels/*%{?dist}.*/$f $f\
+     done)\
+fi\
+%{nil}
+
+#
+# This macro defines a %%post script for a kernel*-modules package.
+# It also defines a %%postun script that does the same thing.
+#	%%kernel_modules_post [<subpackage>]
+#
+%define kernel_modules_post() \
+%{expand:%%post %{?1:%{1}}}\
+/sbin/depmod -a %{KVERREL}%{?1:+%{1}}\
+%{nil}\
+%{expand:%%postun %{?1:%{1}}}\
+/sbin/depmod -a %{KVERREL}%{?1:+%{1}}\
+%{nil}
+
+# This macro defines a %%posttrans script for a kernel package.
+#	%%kernel_variant_posttrans [<subpackage>]
+# More text can follow to go at the end of this variant's %%post.
+# added tp auto-install xen kernel in grub
+#
+%define kernel_variant_posttrans() \
+%{expand:%%posttrans %{?1:%{1}}}\
+%if !%{with_realtime}\
+if [ -x %{_sbindir}/weak-modules ]\
+then\
+    %{_sbindir}/weak-modules --add-kernel %{KVERREL}%{?1:+%{1}} || exit $?\
+fi\
+%endif\
+/bin/kernel-install add %{KVERREL}%{?1:+%{1}} /lib/modules/%{KVERREL}%{?1:+%{1}}/vmlinuz || exit $?\
+%ifarch x86_64\
+if [ -e /etc/sysconfig/xen-kernel ] && [ -e /usr/bin/grub-bootxen.sh ] ; then\
+    kver="%{KVERREL}" /usr/bin/grub-bootxen.sh\
+fi\
+%endif\
+%{nil}
+
+#
+# This macro defines a %%post script for a kernel package and its devel package.
+#	%%kernel_variant_post [-v <subpackage>] [-r <replace>]
+# More text can follow to go at the end of this variant's %%post.
+#
+%define kernel_variant_post(v:r:) \
+%{expand:%%kernel_devel_post %{?-v*}}\
+%{expand:%%kernel_modules_post %{?-v*}}\
+%{expand:%%kernel_variant_posttrans %{?-v*}}\
+%{expand:%%post %{?-v*:%{-v*}}}\
+if grep --silent '^hwcap 0 nosegneg$' /etc/ld.so.conf.d/kernel-*.conf 2> /dev/null; then\
+    /bin/sed -i '/^hwcap 0 nosegneg$/ s/0/1/' /etc/ld.so.conf.d/kernel-*.conf\
+fi\
+%{-r:\
+if [ `uname -i` == "x86_64" -o `uname -i` == "i386" ] &&\
+   [ -f /etc/sysconfig/kernel ]; then\
+  /bin/sed -r -i -e 's/^DEFAULTKERNEL=%{-r*}$/DEFAULTKERNEL=kernel%{?-v:-%{-v*}}/' /etc/sysconfig/kernel || exit $?\
+fi}\
+%{nil}
+
+#
+# This macro defines a %%preun script for a kernel package.
+#	%%kernel_variant_preun <subpackage>
+#
+%define kernel_variant_preun() \
+%{expand:%%preun %{?1:%{1}}}\
+/bin/kernel-install remove %{KVERREL}%{?1:+%{1}} /lib/modules/%{KVERREL}%{?1:+%{1}}/vmlinuz || exit $?\
+%if !%{with_realtime}\
+if [ -x %{_sbindir}/weak-modules ]\
+then\
+    %{_sbindir}/weak-modules --remove-kernel %{KVERREL}%{?1:+%{1}} || exit $?\
+fi\
+%endif\
+if [ -x %{ksbindir}/ldconfig ]\
+then\
+    %{ksbindir}/ldconfig -X || exit $?\
+fi\
+%{nil}
+
+
 %if %{with_std}
-%posttrans
-NEWKERNARGS=""
-(%{ksbindir}/grubby --info=`%{ksbindir}/grubby --default-kernel`) 2>/dev/null | grep -q crashkernel
-if [ $? -ne 0 ]; then
-        NEWKERNARGS="--kernel-args=\"crashkernel=auto\""
-fi
-%if %{with_dracut}
-%{ksbindir}/new-kernel-pkg --package kernel --mkinitrd --dracut --depmod --update %{KVERREL} $NEWKERNARGS || exit $?
-%else
-%{ksbindir}/new-kernel-pkg --package kernel --mkinitrd --depmod --update %{KVERREL} $NEWKERNARGS || exit $?
-%endif
-%{ksbindir}/new-kernel-pkg --package kernel --rpmposttrans %{KVERREL} || exit $?
-if [ -x %{ksbindir}/weak-modules ]; then
-    %{ksbindir}/weak-modules --add-kernel %{KVERREL} || exit $?
-fi
-if [ -x %{ksbindir}/ldconfig ]
-then
-    %{ksbindir}/ldconfig -X || exit $?
-fi
-
-#added tp auto-install xen kernel in grub
-%ifarch x86_64
-if [ -e /etc/sysconfig/xen-kernel ] && [ -e /usr/bin/grub-bootxen.sh ] ; then
-    kver="%{KVERREL}" /usr/bin/grub-bootxen.sh
-fi
-%endif
-
-%post
-if [ `uname -i` == "i386" ] && [ -f /etc/sysconfig/kernel ]; then
-    /bin/sed -r -i -e 's/^DEFAULTKERNEL=kernel-NONPAE$/DEFAULTKERNEL=kernel/' /etc/sysconfig/kernel || exit $?
-fi
-if grep --silent '^hwcap 0 nosegneg$' /etc/ld.so.conf.d/kernel-*.conf 2> /dev/null; then
-    /bin/sed -i '/^hwcap 0 nosegneg$/ s/0/1/' /etc/ld.so.conf.d/kernel-*.conf
-fi
-%{ksbindir}/new-kernel-pkg --package kernel --install %{KVERREL} || exit $?
-
-%preun
-%{ksbindir}/new-kernel-pkg --rminitrd --rmmoddep --remove %{KVERREL} || exit $?
-if [ -x %{ksbindir}/weak-modules ]; then
-    %{ksbindir}/weak-modules --remove-kernel %{KVERREL} || exit $?
-fi
-if [ -x %{ksbindir}/ldconfig ]
-then
-    %{ksbindir}/ldconfig -X || exit $?
-fi
-
-%post devel
-if [ -f /etc/sysconfig/kernel ]; then
-    . /etc/sysconfig/kernel || exit $?
-fi
-if [ "$HARDLINK" != "no" -a -x /usr/sbin/hardlink ]; then
-    pushd /usr/src/kernels/%{KVERREL} > /dev/null
-    /usr/bin/find . -type f | while read f; do
-        hardlink -c /usr/src/kernels/*.fc*.*/$f $f
-    done
-    popd > /dev/null
-fi
+%kernel_variant_preun
+%kernel_variant_post
 %endif
 
 %if %{with_nonpae}
-%posttrans NONPAE
-NEWKERNARGS=""
-(%{ksbindir}/grubby --info=`%{ksbindir}/grubby --default-kernel`) 2> /dev/null | grep -q crashkernel
-if [ $? -ne 0 ]; then
-    NEWKERNARGS="--kernel-args=\"crashkernel=auto\""
-fi
-%if %{with_dracut}
-%{ksbindir}/new-kernel-pkg --package kernel-NONPAE --mkinitrd --dracut --depmod --update %{version}-%{release}NONPAE.%{_target_cpu} $NEWKERNARGS || exit $?
-%else
-%{ksbindir}/new-kernel-pkg --package kernel-NONPAE --mkinitrd --depmod --update %{version}-%{release}NONPAE.%{_target_cpu} $NEWKERNARGS || exit $?
-%endif
-%{ksbindir}/new-kernel-pkg --package kernel-NONPAE --rpmposttrans %{version}-%{release}NONPAE.%{_target_cpu} || exit $?
-if [ -x %{ksbindir}/weak-modules ]; then
-    %{ksbindir}/weak-modules --add-kernel %{version}-%{release}NONPAE.%{_target_cpu} || exit $?
-fi
-if [ -x %{ksbindir}/ldconfig ]
-then
-    %{ksbindir}/ldconfig -X || exit $?
-fi
-
-%post NONPAE
-if [ `uname -i` == "i386" ] && [ -f /etc/sysconfig/kernel ]; then
-    /bin/sed -r -i -e 's/^DEFAULTKERNEL=kernel$/DEFAULTKERNEL=kernel-NONPAE/' /etc/sysconfig/kernel || exit $?
-fi
-%{ksbindir}/new-kernel-pkg --package kernel-NONPAE --install %{version}-%{release}NONPAE.%{_target_cpu} || exit $?
-
-%preun NONPAE
-%{ksbindir}/new-kernel-pkg --rminitrd --rmmoddep --remove %{version}-%{release}NONPAE.%{_target_cpu} || exit $?
-if [ -x %{ksbindir}/weak-modules ]; then
-    %{ksbindir}/weak-modules --remove-kernel %{version}-%{release}NONPAE.%{_target_cpu} || exit $?
-fi
-if [ -x %{ksbindir}/ldconfig ]
-then
-    %{ksbindir}/ldconfig -X || exit $?
-fi
-
-%post NONPAE-devel
-if [ -f /etc/sysconfig/kernel ]; then
-    . /etc/sysconfig/kernel || exit $?
-fi
-if [ "$HARDLINK" != "no" -a -x /usr/sbin/hardlink ]; then
-    pushd /usr/src/kernels/%{version}-%{release}NONPAE.%{_target_cpu} > /dev/null
-    /usr/bin/find . -type f | while read f; do
-        hardlink -c /usr/src/kernels/*.fc*.*/$f $f
-    done
-    popd > /dev/null
-fi
+%kernel_variant_preun NONPAE
+%kernel_variant_post -v NONPAE
 %endif
 
 # Files section.
